@@ -38,7 +38,7 @@ public class BitBoard {
     }
 
     public void setRow(long row, int index){
-        this.board[index] = row;
+        this.board[index] = row & this.getRowMask();
     }
 
     public long getRow(int index){
@@ -105,20 +105,20 @@ public class BitBoard {
         }
     }
 
-    public void shiftLeft(int shift){
+    public void shiftEast(int shift){
         long rowMask = this.getRowMask();
         for (int i = 0; i < height; i++) {
             this.board[i] = (this.board[i] << shift) & rowMask;
         }
     }
 
-    public void shiftRight(int shift){
+    public void shiftWest(int shift){
         for (int i = 0; i < height; i++) {
             this.board[i] >>>= shift;
         }
     }
 
-    public void shiftUp(int shift){
+    public void shiftNorth(int shift){
         for (int i = 0; i < height - shift; i++) {
             this.board[i] = this.board[i + shift];
         }
@@ -127,7 +127,7 @@ public class BitBoard {
         }
     }
     
-    public void shiftDown(int shift){
+    public void shiftSouth(int shift){
         for (int i = height - 1; i >= shift; i--) {
             this.board[i] = this.board[i - shift];
         }
