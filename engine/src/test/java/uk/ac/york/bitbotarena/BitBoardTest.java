@@ -32,9 +32,7 @@ class BitBoardTest {
 
         @Test
         void constructor_shouldThrowOnInvalidWidth() {
-            assertThrows(IllegalArgumentException.class, () -> {
-                new BitBoard(65, 32);
-            });
+            assertThrows(IllegalArgumentException.class, () -> new BitBoard(65, 32));
         }
     }
 
@@ -69,9 +67,7 @@ class BitBoardTest {
         })
         void setBit_shouldThrowOnInvalidCoordinates(int x, int y) {
             BitBoard board = new BitBoard(32, 32);
-            assertThrows(IndexOutOfBoundsException.class, () -> {
-                board.setBit(x, y);
-            });
+            assertThrows(IndexOutOfBoundsException.class, () -> board.setBit(x, y));
         }
 
         @ParameterizedTest(name = "Testing coordinate x={0}, y={1}")
@@ -83,9 +79,7 @@ class BitBoardTest {
         })
         void getBit_shouldThrowOnInvalidCoordinates(int x, int y) {
             BitBoard board = new BitBoard(32, 32);
-            assertThrows(IndexOutOfBoundsException.class, () -> {
-                board.getBit(x, y);
-            });
+            assertThrows(IndexOutOfBoundsException.class, () -> board.getBit(x, y));
         }
     }
 
@@ -160,9 +154,7 @@ class BitBoardTest {
         })
         void clearBit_shouldThrowOnInvalidCoordinates(int x, int y) {
             BitBoard board = new BitBoard(32, 32);
-            assertThrows(IndexOutOfBoundsException.class, () -> {
-                board.clearBit(x, y);
-            });
+            assertThrows(IndexOutOfBoundsException.class, () -> board.clearBit(x, y));
         }
 
 
@@ -320,9 +312,7 @@ class BitBoardTest {
         void and_shouldThrowOnBoardSizeMismatch(int w1, int h1, int w2, int h2) {
             BitBoard b1 = new BitBoard(w1, h1);
             BitBoard b2 = new BitBoard(w2, h2);
-            assertThrows(IllegalArgumentException.class, () -> {
-                b1.and(b2);
-            });
+            assertThrows(IllegalArgumentException.class, () -> b1.and(b2));
         }
 
         @ParameterizedTest(name = "{3}")
@@ -352,9 +342,7 @@ class BitBoardTest {
         void or_shouldThrowOnBoardSizeMismatch(int w1, int h1, int w2, int h2) {
             BitBoard b1 = new BitBoard(w1, h1);
             BitBoard b2 = new BitBoard(w2, h2);
-            assertThrows(IllegalArgumentException.class, () -> {
-                b1.or(b2);
-            });
+            assertThrows(IllegalArgumentException.class, () -> b1.or(b2));
         }
 
         @ParameterizedTest(name = "{3}")
@@ -383,9 +371,7 @@ class BitBoardTest {
         void xor_shouldThrowOnBoardSizeMismatch(int w1, int h1, int w2, int h2) {
             BitBoard b1 = new BitBoard(w1, h1);
             BitBoard b2 = new BitBoard(w2, h2);
-            assertThrows(IllegalArgumentException.class, () -> {
-                b1.xor(b2);
-            });
+            assertThrows(IllegalArgumentException.class, () -> b1.xor(b2));
         }
 
         @ParameterizedTest(name = "{3}")
