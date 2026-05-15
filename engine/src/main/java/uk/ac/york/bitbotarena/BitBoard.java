@@ -9,6 +9,9 @@ public class BitBoard {
         if (width > 64) {
             throw new IllegalArgumentException("Width cannot exceed 64 bits!");
         }
+        if (height > 64) {
+            throw new IllegalArgumentException("Height cannot exceed 64 bits!");
+        }
         this.width = width;
         this.height = height;
 
@@ -38,11 +41,47 @@ public class BitBoard {
     }
 
     public void setRow(long row, int index){
+        if (index < 0 || index >= height) {
+            throw new IndexOutOfBoundsException("Index out of bounds!");
+        }
         this.board[index] = row & this.getRowMask();
     }
 
     public long getRow(int index){
+        if (index < 0 || index >= height) {
+            throw new IndexOutOfBoundsException("Index out of bounds!");
+        }
         return board[index];
+    }
+
+    public void setColumn(long column, int index){
+        if (index < 0 || index >= width) {
+            throw new IndexOutOfBoundsException("Index out of bounds!");
+        }
+        for (int i = 0; i < this.height; i++) {
+            boolean currentBit = (column & (1L << i))!=0;
+            if (currentBit) {
+                this.setBit(index, i);
+            }
+            else {
+                this.clearBit(index, i);
+            }
+        }
+    }
+
+    public long getColumn(int index){
+        if (index < 0 || index >= width) {
+            throw new IndexOutOfBoundsException("Index out of bounds!");
+        }
+        return board[index];
+    }
+
+    public boolean isEmpty(){
+        long total=0L;
+        for (int i = 0; i < this.height; i++) {
+            total |= this.board[i];
+        }
+        return total == 0L;
     }
 
     public long getRowMask(){
@@ -80,6 +119,12 @@ public class BitBoard {
         }
     }
 
+    public BitBoard andOutput(BitBoard otherBoard){
+        BitBoard clone = this.copy();
+        clone.and(otherBoard);
+        return clone;
+    }
+
     public void or(BitBoard otherBoard){
         if (otherBoard.width != this.width || otherBoard.height != this.height){
             throw new IllegalArgumentException("Boards must be of the same size for operations!");
@@ -87,6 +132,12 @@ public class BitBoard {
         for (int i = 0; i < height; i++) {
             this.board[i] |= otherBoard.board[i];
         }
+    }
+
+    public BitBoard orOutput(BitBoard otherBoard){
+        BitBoard clone = this.copy();
+        clone.or(otherBoard);
+        return clone;
     }
 
     public void xor(BitBoard otherBoard){
@@ -98,11 +149,23 @@ public class BitBoard {
         }
     }
 
+    public BitBoard xorOutput(BitBoard otherBoard){
+        BitBoard clone = this.copy();
+        clone.xor(otherBoard);
+        return clone;
+    }
+
     public void not(){
         long rowMask = this.getRowMask();
         for (int i = 0; i < height; i++) {
             this.board[i]= ~this.board[i] & rowMask;
         }
+    }
+
+    public BitBoard notOutput(){
+        BitBoard clone = this.copy();
+        clone.not();
+        return clone;
     }
 
     public void shiftEast(int shift){
@@ -112,10 +175,22 @@ public class BitBoard {
         }
     }
 
+    public BitBoard shiftEastOutput(int shift){
+        BitBoard clone = this.copy();
+        clone.shiftEast(shift);
+        return clone;
+    }
+
     public void shiftWest(int shift){
         for (int i = 0; i < height; i++) {
             this.board[i] >>>= shift;
         }
+    }
+
+    public BitBoard shiftWestOutput(int shift){
+        BitBoard clone = this.copy();
+        clone.shiftWest(shift);
+        return clone;
     }
 
     public void shiftNorth(int shift){
@@ -126,6 +201,12 @@ public class BitBoard {
             this.board[i] = 0L;
         }
     }
+
+    public BitBoard shiftNorthOutput(int shift){
+        BitBoard clone = this.copy();
+        clone.shiftNorth(shift);
+        return clone;
+    }
     
     public void shiftSouth(int shift){
         for (int i = height - 1; i >= shift; i--) {
@@ -134,6 +215,27 @@ public class BitBoard {
         for (int i = 0; i < shift; i++) {
             this.board[i] = 0L;
         }
+    }
+
+    public BitBoard shiftSouthOutput(int shift){
+        BitBoard clone = this.copy();
+        clone.shiftSouth(shift);
+        return clone;
+    }
+
+    public void shift(Movement movement,int shift){
+        switch (movement) {
+            case NORTH -> this.shiftNorth(shift);
+            case EAST -> this.shiftEast(shift);
+            case SOUTH -> this.shiftSouth(shift);
+            case WEST -> this.shiftWest(shift);
+        }
+    }
+
+    public BitBoard shiftOutput(Movement movement,int shift){
+        BitBoard clone = this.copy();
+        clone.shift(movement,shift);
+        return clone;
     }
 
     @Override
