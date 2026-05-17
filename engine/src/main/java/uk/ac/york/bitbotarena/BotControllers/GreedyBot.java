@@ -9,11 +9,25 @@ import java.util.stream.Collectors;
 
 //TODO fix bot suicides
 public class GreedyBot implements BotController {
+    private static final Movement[] MOVEMENT_VALUES = Movement.values();
+    private static final BitBoard[] cachedEdges = new BitBoard[MOVEMENT_VALUES.length];
     int claimingCount = 0;
     boolean retreating = false;
     Random random = new Random();
     BotState currentState;
     public GreedyBot() {
+    }
+
+    private BitBoard neighboursWorkspace;
+    private BitBoard shiftWorkspace;
+    private boolean initialized = false;
+
+    private void lazyInit(int width, int height) {
+        if (!initialized) {
+            this.neighboursWorkspace = new BitBoard(width, height);
+            this.shiftWorkspace = new BitBoard(width, height);
+            this.initialized = true;
+        }
     }
 
     @Override
@@ -36,15 +50,6 @@ public class GreedyBot implements BotController {
         }
     }
 
-    private BitBoard neighbourOverlap(BitBoard currentPosition, BitBoard target) {
-        BitBoard neighbours = generateNeighbours(currentPosition);
-        BitBoard overlap = target.andOutput(neighbours);
-        if (!overlap.isEmpty()){
-            return overlap;
-        }
-
-        return null;
-    }
 
     private BitBoard generateValidNeighbours(BitBoard startingBoard) {
         BitBoard neighbours = generateNeighbours(startingBoard);
@@ -52,44 +57,61 @@ public class GreedyBot implements BotController {
     }
 
     private BitBoard generateNeighbours(BitBoard startingBoard) {
-        BitBoard neighbours = startingBoard.copy();
+        lazyInit(startingBoard.getWidth(), startingBoard.getHeight());
 
-        neighbours.or(startingBoard.shiftNorthOutput(1));
-        neighbours.or(startingBoard.shiftSouthOutput(1));
-        neighbours.or(startingBoard.shiftEastOutput(1));
-        neighbours.or(startingBoard.shiftWestOutput(1));
+        neighboursWorkspace.clearBoard();
+        neighboursWorkspace.copyFrom(startingBoard);
 
-        neighbours.xor(startingBoard);
-        return neighbours;
+        shiftWorkspace.copyFrom(startingBoard);
+        shiftWorkspace.shiftNorth(1);
+        neighboursWorkspace.or(shiftWorkspace);
+
+        shiftWorkspace.copyFrom(startingBoard);
+        shiftWorkspace.shiftSouth(1);
+        neighboursWorkspace.or(shiftWorkspace);
+
+
+        shiftWorkspace.copyFrom(startingBoard);
+        shiftWorkspace.shiftEast(1);
+        neighboursWorkspace.or(shiftWorkspace);
+
+
+        shiftWorkspace.copyFrom(startingBoard);
+        shiftWorkspace.shiftWest(1);
+        neighboursWorkspace.or(shiftWorkspace);
+
+        neighboursWorkspace.xor(startingBoard);
+        return neighboursWorkspace;
     }
 
     private BitBoard removeInvalidBits(BitBoard board) {
         BitBoard blockedMask = currentState.getClaimingBoard().copy();
 
         if (currentState.getInvalidBoard()==null) {
-            return board.andOutput(blockedMask.notOutput());
+            board.and(blockedMask.notOutput());
+            return board;
         }
         blockedMask.or(currentState.getInvalidBoard());
-        return board.andOutput(blockedMask.notOutput());
+        board.and(blockedMask.notOutput());
+        return board;
     }
 
     private Movement getDirectionTo(BitBoard currentPosition, BitBoard target) {
+        Arrays.fill(cachedEdges, null);
         BitBoard center = generateValidNeighbours(currentPosition).andOutput(target);
-
-        BitBoard[] cachedEdges = new BitBoard[Movement.values().length];
 
 
         // Cross +
         if (!center.isEmpty()) {
-            int startOffset = getRandomIndex(Movement.values().length);
+            int startOffset = getRandomIndex(MOVEMENT_VALUES.length);
 
-            for (int i = 0; i < Movement.values().length; i++) {
-                Movement move = Movement.values()[(i + startOffset) % 4];
+            for (int i = 0; i < MOVEMENT_VALUES.length; i++) {
+                Movement move = MOVEMENT_VALUES[(i + startOffset) % 4];
 
                 BitBoard edge = generateNeighbourSection(currentPosition, move).andOutput(target);
                 cachedEdges[move.ordinal()] = edge;
 
-                if (!edge.andOutput(center).isEmpty() && currentState.validMove(move)) {
+                if (!edge.intersects(center) && currentState.validMove(move)) {
                     return move;
                 }
             }
@@ -107,7 +129,7 @@ public class GreedyBot implements BotController {
                 BitBoard verticalEdge = getOrComputeEdge(cachedEdges, currentPosition, target, verticalMove);
                 BitBoard horizontalEdge = getOrComputeEdge(cachedEdges, currentPosition, target, horizontalMove);
 
-                if (!verticalEdge.andOutput(horizontalEdge).isEmpty()) {
+                if (!verticalEdge.intersects(horizontalEdge)) {
 
                     // Check validity in a random order
                     boolean verticalFirst = random.nextBoolean();
@@ -124,9 +146,9 @@ public class GreedyBot implements BotController {
         }
 
         // Must be on far edges
-        int startOffset = getRandomIndex(Movement.values().length);
-        for (int i = 0; i < Movement.values().length; i++) {
-            Movement move = Movement.values()[(i + startOffset) % 4];
+        int startOffset = getRandomIndex(MOVEMENT_VALUES.length);
+        for (int i = 0; i < MOVEMENT_VALUES.length; i++) {
+            Movement move = MOVEMENT_VALUES[(i + startOffset) % 4];
             BitBoard edge = getOrComputeEdge(cachedEdges, currentPosition, target, move);
 
             if (!edge.isEmpty() && currentState.validMove(move)) {
@@ -168,7 +190,7 @@ public class GreedyBot implements BotController {
 
 
     private Movement randomMove() {
-        return Movement.values()[getRandomIndex(Movement.values().length)];
+        return MOVEMENT_VALUES[getRandomIndex(MOVEMENT_VALUES.length)];
     }
     
     private int getRandomIndex(int size) {
@@ -176,17 +198,19 @@ public class GreedyBot implements BotController {
     }
 
     private Movement safeRandomMove() {
-        List<Movement> validMove = filterByValidMoves(Arrays.stream(Movement.values()).toList());
-        if (validMove.isEmpty()) {
+        Movement[] validMoves = new Movement[4];
+        int index = 0;
+
+        for (Movement move : MOVEMENT_VALUES) {
+            if (currentState.validMove(move)) {
+                validMoves[index++] = move;
+            }
+        }
+
+        if (index==0) {
             return randomMove();
         }
-        return validMove.get(getRandomIndex(validMove.size()));
-    }
-
-    private List<Movement> filterByValidMoves(List<Movement> moves) {
-        return moves.stream()
-                .filter(move -> currentState.validMove(move))
-                .collect(Collectors.toList());
+        return validMoves[getRandomIndex(index)];
     }
 
 }

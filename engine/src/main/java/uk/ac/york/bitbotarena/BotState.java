@@ -22,9 +22,6 @@ public class BotState {
         this.dead = false;
         this.height = height;
         this.width = width;
-        System.out.println("Claimed Board:\n" + claimedBoard);
-        System.out.println("Claiming Board:\n" + claimingBoard);
-        System.out.println("Current Position:\n" + currentPosition);
     }
 
     public void updateInvalidBoard(BitBoard invalidBoard) {
@@ -73,9 +70,9 @@ public class BotState {
 
     public boolean validMove(Movement movement) {
         BitBoard newPosition = currentPosition.shiftOutput(movement, 1);
-        boolean isNotCuttingHeadOff = newPosition.andOutput(claimingBoard).isEmpty();
+        boolean isNotCuttingHeadOff = !newPosition.intersects(claimingBoard);
         boolean isOnBoard = !newPosition.isEmpty();
-        boolean isNotInvalid = invalidBoard == null || newPosition.andOutput(invalidBoard).isEmpty();
+        boolean isNotInvalid = invalidBoard == null || !newPosition.intersects(invalidBoard);
         return isNotCuttingHeadOff && isOnBoard && isNotInvalid;
     }
 

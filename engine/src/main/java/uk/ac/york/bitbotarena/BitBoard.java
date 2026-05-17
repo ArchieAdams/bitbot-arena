@@ -115,6 +115,15 @@ public class BitBoard {
         return clone;
     }
 
+    public boolean intersects(BitBoard other) {
+        for (int i = 0; i < this.board.length; i++) {
+            if ((this.board[i] & other.board[i]) != 0L) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void and(BitBoard otherBoard){
         if (otherBoard.width != this.width || otherBoard.height != this.height){
             throw new IllegalArgumentException("Boards must be of the same size for operations!");
@@ -276,5 +285,11 @@ public class BitBoard {
             if (this.board[i] != other.board[i]) return false;
         }
         return true;
+    }
+
+    public void copyFrom(BitBoard startingBoard) {
+        for (int i = 0; i < height; i++) {
+            this.setRow(startingBoard.getRow(i), i);
+        }
     }
 }

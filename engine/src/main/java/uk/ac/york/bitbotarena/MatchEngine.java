@@ -4,7 +4,6 @@ import uk.ac.york.bitbotarena.BotControllers.BotController;
 import uk.ac.york.bitbotarena.BotControllers.GreedyBot;
 import uk.ac.york.bitbotarena.BotControllers.RandomBot;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 
 import static uk.ac.york.bitbotarena.MatchVisualiser.botStates;
@@ -14,6 +13,8 @@ public class MatchEngine {
     private final int width;
     private final int height;
 
+    private boolean headless = true;
+    
     private BotEntity[] bots;
     public MatchEngine(int width, int height,  int numberOfBots) {
         this.width = width;
@@ -72,7 +73,7 @@ public class MatchEngine {
                 BotEntity otherBot = bots[j];
                 if (bot.isDead() || otherBot.isDead()) continue;
                 if (doCollide(bot.getCurrentPosition(), otherBot.getCurrentPosition())) {
-                    System.out.println("Head collision between "+MatchVisualiser.colourBotName(i)+" and "+MatchVisualiser.colourBotName(j));
+                    log("Head collision between "+MatchVisualiser.colourBotName(i)+" and "+MatchVisualiser.colourBotName(j));
                     bot.kill();
                     otherBot.kill();
                 }
@@ -89,10 +90,10 @@ public class MatchEngine {
                 if (doCollide(bot.getCurrentPosition(), otherBot.getClaimingBoard())) {
                     otherBot.kill();
                     bot.killedOtherBot();
-                    System.out.println(MatchVisualiser.colourBotName(i)+ " cut off "+MatchVisualiser.colourBotName(j));
+                    log(MatchVisualiser.colourBotName(i)+ " cut off "+MatchVisualiser.colourBotName(j));
                 }
                 if (doCollide(bot.getClaimingBoard(), otherBot.getCurrentPosition())) {
-                    System.out.println(MatchVisualiser.colourBotName(j)+ " cut off "+MatchVisualiser.colourBotName(i));
+                    log(MatchVisualiser.colourBotName(j)+ " cut off "+MatchVisualiser.colourBotName(i));
                     bot.kill();
                     otherBot.killedOtherBot();
                 }
@@ -109,10 +110,10 @@ public class MatchEngine {
                 if (doCollide(bot.getClaimedBoard(), otherBot.getCurrentPosition())) {
                     otherBot.kill();
                     bot.killedOtherBot();
-                    System.out.println(MatchVisualiser.colourBotName(i)+ " claimed "+MatchVisualiser.colourBotName(j)+"'s head");
+                    log(MatchVisualiser.colourBotName(i)+ " claimed "+MatchVisualiser.colourBotName(j)+"'s head");
                 }
                 if (doCollide(otherBot.getClaimedBoard(), bot.getCurrentPosition())) {
-                    System.out.println(MatchVisualiser.colourBotName(j)+ " claimed "+MatchVisualiser.colourBotName(i)+"'s head");
+                    log(MatchVisualiser.colourBotName(j)+ " claimed "+MatchVisualiser.colourBotName(i)+"'s head");
                     bot.kill();
                     otherBot.killedOtherBot();
                 }
@@ -121,7 +122,7 @@ public class MatchEngine {
     }
 
     private boolean doCollide(BitBoard botBoard1,BitBoard botBoard2) {
-        return !botBoard1.andOutput(botBoard2).isEmpty();
+        return !botBoard1.intersects(botBoard2);
     }
 
 
@@ -131,15 +132,23 @@ public class MatchEngine {
     }
 
     public void printFinalScoreboard() {
-        System.out.println("=== FINAL SCORES ===");
+        if (headless) {
+            return;
+        }
+        log("=== FINAL SCORES ===");
         for (int i = 0; i < bots.length; i++) {
             BotEntity bot = bots[i];
             int score = bot.getClaimedBoard().getWeight();
             score += bot.getKills() * 10;
             String status = bot.isDead() ? "[DEAD]" : "[ALIVE]";
-            System.out.println(MatchVisualiser.colourBotName(i)+ " " + status + "\t Score: " + score+"\t Kills: "+bot.getKills());
+            log(MatchVisualiser.colourBotName(i)+ " " + status + "\t Score: " + score+"\t Kills: "+bot.getKills());
         }
     }
 
-
+    private void log(String message) {
+        if(headless) {
+            return;
+        }
+        System.out.println(message);
+    }
 }

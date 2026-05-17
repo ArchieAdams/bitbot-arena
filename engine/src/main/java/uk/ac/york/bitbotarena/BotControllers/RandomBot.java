@@ -24,7 +24,6 @@ public class RandomBot implements BotController {
             Movement randomMove = movementList.get(random.nextInt(movementList.size()));
             if (state.validMove(randomMove)){
                 move = randomMove;
-                System.out.println(move);
                 break;
             } else {
                 movementList.remove(randomMove);
