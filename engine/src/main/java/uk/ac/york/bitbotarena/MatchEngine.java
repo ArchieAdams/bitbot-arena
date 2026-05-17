@@ -1,84 +1,78 @@
 package uk.ac.york.bitbotarena;
 
-import java.util.ArrayList;
+import uk.ac.york.bitbotarena.BotControllers.BotController;
+import uk.ac.york.bitbotarena.BotControllers.GreedyBot;
+import uk.ac.york.bitbotarena.BotControllers.RandomBot;
+
+import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+
+import static uk.ac.york.bitbotarena.MatchVisualiser.botStates;
+import static uk.ac.york.bitbotarena.MatchVisualiser.getVisualGrid;
 
 public class MatchEngine {
-    private int width;
-    private int height;
+    private final int width;
+    private final int height;
 
-    private int numberOfBots;
-    private BotState[] bots;
+    private BotEntity[] bots;
     public MatchEngine(int width, int height,  int numberOfBots) {
         this.width = width;
         this.height = height;
-        this.numberOfBots = numberOfBots;
-        this.bots = new BotState[numberOfBots];
-        Random rand = new Random();
+        this.bots = new BotEntity[numberOfBots];
+
+        int[] x = {2,width-3,2,width-3};
+        int[] y = {2,2,height-3,height-3};
+
+
         for (int i = 0; i < numberOfBots; i++) {
-            bots[i] = new BotState(width, height, rand.nextInt(width), rand.nextInt(height));
+            BotController botController = new GreedyBot();
+            if (i==3){
+                botController = new RandomBot();
+            }
+            bots[i] = new BotEntity(width, height, x[i], y[i], botController);
         }
     }
 
+
     public void executeTick() {
-        BotState[] aliveBots = Arrays.stream(bots).filter(b -> !b.isDead()).toArray(BotState[]::new);
+        BitBoard masterClaimed = new BitBoard(width, height);
+        for (int i = 0; i < bots.length; i++) {
+            masterClaimed.or(bots[i].getClaimedBoard());
+        }
 
         for (int i = 0; i < bots.length; i++) {
-            BitBoard invalid = new BitBoard(width, height);
-            BotState bot = bots[i];
+            BotEntity bot = bots[i];
+
             if (bot.isDead()) {
                 continue;
             }
-            for (int j = 0; j < bots.length; j++) {
-                if (j == i) continue;
-                invalid.or(bots[j].getClaimedBoard());
-            }
-            bot.updateInvalidBoard(invalid);
+
+            // Remove own form enemy
+            BitBoard enemyClaims = masterClaimed.copy();
+            enemyClaims.xor(bot.getClaimedBoard());
+            bot.updateInvalidBoard(enemyClaims);
+
+            bot.executeMove();
         }
 
-        for (BotState bot : aliveBots) {
-            Movement move = getBotMove(bot);
-            bot.move(move);
-        }
         killBotHeadCollisions();
         killBotClaimingCollisions();
-
-        System.out.println(getVisualGrid());
-        System.out.println(botStates());
+        killBotInAreaJustClaimed();
     }
 
-    private Movement getBotMove(BotState bot) {
-        Random rand = new Random();
-
-        Movement[] movements = {Movement.NORTH, Movement.EAST, Movement.SOUTH, Movement.WEST};
-        List<Movement> movementList = new ArrayList<>(Arrays.asList(movements));
-        Movement move = null;
-        while (!movementList.isEmpty()) {
-            Movement randomMove = movementList.get(rand.nextInt(movementList.size())); // use current size
-            if (bot.validMove(randomMove)){
-                move = randomMove;
-                System.out.println(move);
-                break;
-            } else {
-                movementList.remove(randomMove);
-            }
-        }
-        if (move == null) {
-            movements = new Movement[]{Movement.NORTH, Movement.EAST, Movement.SOUTH, Movement.WEST};
-            move = movements[rand.nextInt(movements.length)];
-        }
-        return move;
+    @Override
+    public String toString() {
+        return getVisualGrid(bots, width, height) + "\n" + botStates(bots);
     }
 
     private void killBotHeadCollisions(){
-        BotState[] aliveBots = Arrays.stream(bots).filter(b -> !b.isDead()).toArray(BotState[]::new);
-        for (int i = 0; i < aliveBots.length; i++) {
-            for (int j = i + 1; j < aliveBots.length; j++) {
-                BotState bot = aliveBots[i];
-                BotState otherBot = aliveBots[j];
+        for (int i = 0; i < bots.length; i++) {
+            for (int j = i + 1; j < bots.length; j++) {
+                BotEntity bot = bots[i];
+                BotEntity otherBot = bots[j];
+                if (bot.isDead() || otherBot.isDead()) continue;
                 if (doCollide(bot.getCurrentPosition(), otherBot.getCurrentPosition())) {
+                    System.out.println("Head collision between "+MatchVisualiser.colourBotName(i)+" and "+MatchVisualiser.colourBotName(j));
                     bot.kill();
                     otherBot.kill();
                 }
@@ -87,16 +81,40 @@ public class MatchEngine {
     }
 
     private void killBotClaimingCollisions(){
-        BotState[] aliveBots = Arrays.stream(bots).filter(b -> !b.isDead()).toArray(BotState[]::new);
-        for (int i = 0; i < aliveBots.length; i++) {
-            for (int j = i + 1; j < aliveBots.length; j++) {
-                BotState bot = aliveBots[i];
-                BotState otherBot = aliveBots[j];
+        for (int i = 0; i < bots.length; i++) {
+            for (int j = i + 1; j < bots.length; j++) {
+                BotEntity bot = bots[i];
+                BotEntity otherBot = bots[j];
+                if (bot.isDead() || otherBot.isDead()) continue;
                 if (doCollide(bot.getCurrentPosition(), otherBot.getClaimingBoard())) {
                     otherBot.kill();
+                    bot.killedOtherBot();
+                    System.out.println(MatchVisualiser.colourBotName(i)+ " cut off "+MatchVisualiser.colourBotName(j));
                 }
                 if (doCollide(bot.getClaimingBoard(), otherBot.getCurrentPosition())) {
+                    System.out.println(MatchVisualiser.colourBotName(j)+ " cut off "+MatchVisualiser.colourBotName(i));
                     bot.kill();
+                    otherBot.killedOtherBot();
+                }
+            }
+        }
+    }
+
+    private void killBotInAreaJustClaimed(){
+        for (int i = 0; i < bots.length; i++) {
+            for (int j = i + 1; j < bots.length; j++) {
+                BotEntity bot = bots[i];
+                BotEntity otherBot = bots[j];
+                if (bot.isDead() || otherBot.isDead()) continue;
+                if (doCollide(bot.getClaimedBoard(), otherBot.getCurrentPosition())) {
+                    otherBot.kill();
+                    bot.killedOtherBot();
+                    System.out.println(MatchVisualiser.colourBotName(i)+ " claimed "+MatchVisualiser.colourBotName(j)+"'s head");
+                }
+                if (doCollide(otherBot.getClaimedBoard(), bot.getCurrentPosition())) {
+                    System.out.println(MatchVisualiser.colourBotName(j)+ " claimed "+MatchVisualiser.colourBotName(i)+"'s head");
+                    bot.kill();
+                    otherBot.killedOtherBot();
                 }
             }
         }
@@ -106,73 +124,21 @@ public class MatchEngine {
         return !botBoard1.andOutput(botBoard2).isEmpty();
     }
 
-    public static final String RESET = "\u001B[0m";
-    public static final String RED = "\u001B[31m";
-    public static final String GREEN = "\u001B[32m";
-    public static final String YELLOW = "\u001B[33m";
-    public static final String BLUE = "\u001B[34m";
-    public static final String PURPLE = "\u001B[35m";
-    public static final String CYAN = "\u001B[36m";
-    public static final String[] COLOURS = {RED, GREEN, YELLOW, BLUE, PURPLE, CYAN};
 
-    public String colourText(int botIndex, String text) {
-        if (botIndex < COLOURS.length) {
-            return COLOURS[botIndex] + text + RESET;
-        }
-        return "";
-    }
-
-    public String getVisualGrid() {
-        StringBuilder sb = new StringBuilder();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                String foundString = "";
-                for (int i = 0; i < numberOfBots; i++) {
-
-                    BotState bot = bots[i];
-                    if (bot.getCurrentPosition().getBit(x, y)) {
-                        foundString = colourText(i,"P");
-                        break;
-                    }
-                    else if (bot.getClaimingBoard().getBit(x, y)) {
-                        foundString = colourText(i,"+");
-                        break;
-                    }
-                    else if (bot.getClaimedBoard().getBit(x, y)) {
-                        foundString = colourText(i,"#");
-                        break;
-                    }
-                }
-                if (foundString.isEmpty()) {
-                    sb.append(". ");
-                }
-                else {
-                    sb.append(foundString).append(" ");
-                }
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
-
-    public String botStates(){
-        StringBuilder deaths = new StringBuilder();
-        deaths.append("Deaths:\t");
-        StringBuilder claiming = new StringBuilder();
-        claiming.append("Claiming:\t");
-        for (int i = 0; i < numberOfBots; i++) {
-            if(bots[i].isDead()){
-                deaths.append(colourText(i,"Bot "+i)).append("\t");
-            }
-            if (bots[i].isClaiming()) {
-                claiming.append(colourText(i,"Bot "+i)).append("\t");
-            }
-        }
-        return deaths.append("\n").append(claiming).toString();
-    }
 
     public boolean isGameOver() {
         return Arrays.stream(bots).filter(b -> !b.isDead()).count() <= 1;
+    }
+
+    public void printFinalScoreboard() {
+        System.out.println("=== FINAL SCORES ===");
+        for (int i = 0; i < bots.length; i++) {
+            BotEntity bot = bots[i];
+            int score = bot.getClaimedBoard().getWeight();
+            score += bot.getKills() * 10;
+            String status = bot.isDead() ? "[DEAD]" : "[ALIVE]";
+            System.out.println(MatchVisualiser.colourBotName(i)+ " " + status + "\t Score: " + score+"\t Kills: "+bot.getKills());
+        }
     }
 
 

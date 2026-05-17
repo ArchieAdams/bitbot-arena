@@ -73,7 +73,13 @@ public class BitBoard {
         if (index < 0 || index >= width) {
             throw new IndexOutOfBoundsException("Index out of bounds!");
         }
-        return board[index];
+        long column = 0L;
+        for (int i = 0; i < this.height; i++) {
+            if (this.getBit(index, i)) {
+                column |= (1L << i);
+            }
+        }
+        return column;
     }
 
     public boolean isEmpty(){
@@ -236,6 +242,16 @@ public class BitBoard {
         BitBoard clone = this.copy();
         clone.shift(movement,shift);
         return clone;
+    }
+
+    public int getWeight() {
+        int total = 0;
+
+        for (int y = 0; y < height; y++) {
+            total += Long.bitCount(this.board[y]);
+        }
+
+        return total;
     }
 
     @Override

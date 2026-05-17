@@ -1,17 +1,40 @@
 package uk.ac.york.bitbotarena;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 public class Main {
     public static void main(String[] args) {
-        MatchEngine matchEngine = new MatchEngine(10,10,6);
+        MatchEngine matchEngine = new MatchEngine(10,10,4);
+        int turn=0;
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime turnTime;
+        StringBuilder turnTimes = new StringBuilder();
         while (!matchEngine.isGameOver()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            turnTime = LocalDateTime.now();
+            turn++;
+//            try {
+//                Thread.sleep(0);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
             matchEngine.executeTick();
-            System.out.print(String.format("\033[%dA", 14));
+            //System.out.print(String.format("\033[%dA", 14));
+            turnTimes.append("Turn ").append(turn).append(" time: ").append(ChronoUnit.MICROS.between(turnTime, LocalDateTime.now())).append(" μs\n");
+
+            if (turn%1==0) {
+                System.out.println(matchEngine);
+            }
+            if (turn==100) {
+                break;
+            }
         }
+        System.out.println("Game Over in " + turn + " turns!");
+        LocalDateTime end = LocalDateTime.now();
+        System.out.println("Total Time: " + ChronoUnit.MILLIS.between(start,end) + " ms");
+        System.out.println(turnTimes);
+        System.out.println(matchEngine);
+        matchEngine.printFinalScoreboard();
     }
     public static BitBoard floodFill(BitBoard claimed) {
         int floodBoardWidth = claimed.getWidth() + 2;

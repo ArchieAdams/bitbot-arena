@@ -16,15 +16,15 @@ public class BotState {
     public BotState(int width, int height, int startX, int startY) {
         this.claimingBoard = new BitBoard(width, height);
         this.currentPosition = new BitBoard(width, height);
-        this.currentPosition.setBit(startX,startY);
+        this.currentPosition.setBit(startX, startY);
         this.claimedBoard = this.currentPosition.copy();
         this.claiming = false;
         this.dead = false;
         this.height = height;
         this.width = width;
-        System.out.println("Claimed Board:\n"+claimedBoard);
-        System.out.println("Claiming Board:\n"+claimingBoard);
-        System.out.println("Current Position:\n"+currentPosition);
+        System.out.println("Claimed Board:\n" + claimedBoard);
+        System.out.println("Claiming Board:\n" + claimingBoard);
+        System.out.println("Current Position:\n" + currentPosition);
     }
 
     public void updateInvalidBoard(BitBoard invalidBoard) {
@@ -32,20 +32,19 @@ public class BotState {
     }
 
     public void move(Movement movement) {
-        if(dead) return;
+        if (dead) return;
         if (validMove(movement)) {
-            BitBoard nextPosition = currentPosition.shiftOutput(movement,1);
+            BitBoard nextPosition = currentPosition.shiftOutput(movement, 1);
             if (nextPosition.orOutput(claimedBoard).equals(claimedBoard)) {
                 //Inside claim
-                System.out.println("Inside Claim");
                 if (claiming) {
                     claimedBoard.or(claimingBoard);
                     claimingBoard.clearBoard();
-                    claimedBoard=floodFill(claimedBoard);
+                    claimedBoard = floodFill(claimedBoard);
+                    claimedBoard.and(invalidBoard.notOutput());
                     claiming = false;
                 }
-            }
-            else {
+            } else {
                 //Outside claim
                 if (!claiming) {
                     claiming = true;
@@ -53,8 +52,7 @@ public class BotState {
                 claimingBoard.or(nextPosition);
             }
             this.currentPosition = nextPosition;
-        }
-        else {
+        } else {
             this.kill();
         }
     }
@@ -74,14 +72,11 @@ public class BotState {
     }
 
     public boolean validMove(Movement movement) {
-        BitBoard newPosition = currentPosition.shiftOutput(movement,1);
+        BitBoard newPosition = currentPosition.shiftOutput(movement, 1);
         boolean isNotCuttingHeadOff = newPosition.andOutput(claimingBoard).isEmpty();
         boolean isOnBoard = !newPosition.isEmpty();
-        boolean isNotInvalid = invalidBoard==null || newPosition.andOutput(invalidBoard).isEmpty();
-        if (isNotCuttingHeadOff && isOnBoard && isNotInvalid) {
-            return true;
-        }
-        return false;
+        boolean isNotInvalid = invalidBoard == null || newPosition.andOutput(invalidBoard).isEmpty();
+        return isNotCuttingHeadOff && isOnBoard && isNotInvalid;
     }
 
     public boolean isDead() {
@@ -89,8 +84,8 @@ public class BotState {
     }
 
     public void kill() {
-        dead=true;
-        claiming=false;
+        dead = true;
+        claiming = false;
         currentPosition.clearBoard();
         claimingBoard.clearBoard();
     }
@@ -109,5 +104,9 @@ public class BotState {
 
     public BitBoard getClaimingBoard() {
         return claimingBoard;
+    }
+
+    public BitBoard getInvalidBoard() {
+        return invalidBoard;
     }
 }
