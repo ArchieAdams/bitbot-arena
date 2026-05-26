@@ -41,13 +41,11 @@ public class MatchEngine {
 
     public void executeTick() {
         BitBoard masterClaimed = new BitBoard(width, height);
-        for (int i = 0; i < bots.length; i++) {
-            masterClaimed.or(bots[i].getClaimedBoard());
+        for (BotEntity botEntity : bots) {
+            masterClaimed.or(botEntity.getClaimedBoard());
         }
 
-        for (int i = 0; i < bots.length; i++) {
-            BotEntity bot = bots[i];
-
+        for (BotEntity bot : bots) {
             if (bot.isDead()) {
                 continue;
             }
