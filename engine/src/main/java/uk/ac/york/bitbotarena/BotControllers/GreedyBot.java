@@ -7,10 +7,9 @@ import uk.ac.york.bitbotarena.Movement;
 import java.util.Arrays;
 import java.util.Random;
 
-//TODO fix bot suicides
 public class GreedyBot implements BotController {
     private static final Movement[] MOVEMENT_VALUES = Movement.values();
-    private static final BitBoard[] cachedEdges = new BitBoard[MOVEMENT_VALUES.length];
+    private final BitBoard[] cachedEdges = new BitBoard[MOVEMENT_VALUES.length];
     int claimingCount = 0;
     boolean retreating = false;
     Random random = new Random();
@@ -126,8 +125,8 @@ public class GreedyBot implements BotController {
         for (Movement verticalMove : verticals) {
             for (Movement horizontalMove : horizontals) {
 
-                BitBoard verticalEdge = getOrComputeEdge(cachedEdges, currentPosition, target, verticalMove);
-                BitBoard horizontalEdge = getOrComputeEdge(cachedEdges, currentPosition, target, horizontalMove);
+                BitBoard verticalEdge = getOrComputeEdge(currentPosition, target, verticalMove);
+                BitBoard horizontalEdge = getOrComputeEdge(currentPosition, target, horizontalMove);
 
                 if (verticalEdge.noIntersection(horizontalEdge)) {
 
@@ -149,7 +148,7 @@ public class GreedyBot implements BotController {
         int startOffset = getRandomIndex(MOVEMENT_VALUES.length);
         for (int i = 0; i < MOVEMENT_VALUES.length; i++) {
             Movement move = MOVEMENT_VALUES[(i + startOffset) % 4];
-            BitBoard edge = getOrComputeEdge(cachedEdges, currentPosition, target, move);
+            BitBoard edge = getOrComputeEdge(currentPosition, target, move);
 
             if (!edge.isEmpty() && currentState.validMove(move)) {
                 return move;
@@ -160,11 +159,11 @@ public class GreedyBot implements BotController {
     }
 
 
-    private BitBoard getOrComputeEdge(BitBoard[] cache, BitBoard pos, BitBoard target, Movement move) {
-        if (cache[move.ordinal()] == null) {
-            cache[move.ordinal()] = generateNeighbourSection(pos, move).andOutput(target);
+    private BitBoard getOrComputeEdge(BitBoard pos, BitBoard target, Movement move) {
+        if (cachedEdges[move.ordinal()] == null) {
+            cachedEdges[move.ordinal()] = generateNeighbourSection(pos, move).andOutput(target);
         }
-        return cache[move.ordinal()];
+        return cachedEdges[move.ordinal()];
     }
 
 
