@@ -70,9 +70,9 @@ public class BotState {
 
     public boolean validMove(Movement movement) {
         BitBoard newPosition = currentPosition.shiftOutput(movement, 1);
-        boolean isNotCuttingHeadOff = !newPosition.intersects(claimingBoard);
+        boolean isNotCuttingHeadOff = newPosition.noIntersection(claimingBoard);
         boolean isOnBoard = !newPosition.isEmpty();
-        boolean isNotInvalid = invalidBoard == null || !newPosition.intersects(invalidBoard);
+        boolean isNotInvalid = invalidBoard == null || newPosition.noIntersection(invalidBoard);
         return isNotCuttingHeadOff && isOnBoard && isNotInvalid;
     }
 

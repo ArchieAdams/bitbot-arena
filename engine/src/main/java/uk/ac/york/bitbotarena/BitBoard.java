@@ -114,13 +114,13 @@ public class BitBoard {
         return clone;
     }
 
-    public boolean intersects(BitBoard other) {
+    public boolean noIntersection(BitBoard other) {
         for (int i = 0; i < this.board.length; i++) {
             if ((this.board[i] & other.board[i]) != 0L) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     public void and(BitBoard otherBoard) {

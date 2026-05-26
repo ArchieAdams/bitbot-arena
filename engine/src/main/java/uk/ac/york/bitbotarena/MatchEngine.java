@@ -34,11 +34,6 @@ public class MatchEngine {
         }
     }
 
-    // TODO remove this method
-    public BotEntity[] getBots() {
-        return bots;
-    }
-
     public void executeTick() {
         BitBoard masterClaimed = new BitBoard(width, height);
         for (BotEntity botEntity : bots) {
@@ -124,7 +119,7 @@ public class MatchEngine {
     }
 
     private boolean doCollide(BitBoard botBoard1,BitBoard botBoard2) {
-        return !botBoard1.intersects(botBoard2);
+        return botBoard1.noIntersection(botBoard2);
     }
 
 

@@ -4,8 +4,8 @@ import uk.ac.york.bitbotarena.BitBoard;
 import uk.ac.york.bitbotarena.BotState;
 import uk.ac.york.bitbotarena.Movement;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Random;
 
 //TODO fix bot suicides
 public class GreedyBot implements BotController {
@@ -111,7 +111,7 @@ public class GreedyBot implements BotController {
                 BitBoard edge = generateNeighbourSection(currentPosition, move).andOutput(target);
                 cachedEdges[move.ordinal()] = edge;
 
-                if (!edge.intersects(center) && currentState.validMove(move)) {
+                if (edge.noIntersection(center) && currentState.validMove(move)) {
                     return move;
                 }
             }
@@ -129,7 +129,7 @@ public class GreedyBot implements BotController {
                 BitBoard verticalEdge = getOrComputeEdge(cachedEdges, currentPosition, target, verticalMove);
                 BitBoard horizontalEdge = getOrComputeEdge(cachedEdges, currentPosition, target, horizontalMove);
 
-                if (!verticalEdge.intersects(horizontalEdge)) {
+                if (verticalEdge.noIntersection(horizontalEdge)) {
 
                     // Check validity in a random order
                     boolean verticalFirst = random.nextBoolean();

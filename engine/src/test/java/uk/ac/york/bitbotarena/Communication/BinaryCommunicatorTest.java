@@ -132,7 +132,7 @@ class BinaryCommunicatorTest {
         }
 
         @Test
-        void sendState_invalidBoard() throws IOException {
+        void sendState_invalidBoard() {
             bots[0].getClaimedBoard().setBit(0, 0);
             bots[0].getClaimingBoard().setBit(0, 0);
             assertThrows(IllegalStateException.class, () -> communicator.sendState(0, (byte) 2, bots),
