@@ -10,34 +10,34 @@ public class Main {
     public static void main(String[] args) {
         MatchEngine matchEngine = new MatchEngine(BOARD_WIDTH,BOARD_HEIGHT,4);
         int turn=0;
-        //LocalDateTime start = LocalDateTime.now();
-//        LocalDateTime turnTime;
-//        StringBuilder turnTimes = new StringBuilder();
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime turnTime;
+        StringBuilder turnTimes = new StringBuilder();
         while (!matchEngine.isGameOver()) {
-            //turnTime = LocalDateTime.now();
+            turnTime = LocalDateTime.now();
             turn++;
-//            try {
-//                Thread.sleep(0);
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
+            try {
+                Thread.sleep(0);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             matchEngine.executeTick();
-            //System.out.print(String.format("\033[%dA", 14));
-            //turnTimes.append("Turn ").append(turn).append(" time: ").append(ChronoUnit.MICROS.between(turnTime, LocalDateTime.now())).append(" μs\n");
+            System.out.printf("\033[%dA", 14);
+            turnTimes.append("Turn ").append(turn).append(" time: ").append(ChronoUnit.MICROS.between(turnTime, LocalDateTime.now())).append(" μs\n");
 
             if (turn==100) {
                 break;
             }
         }
-//        System.out.println("Game Over in " + turn + " turns!");
-//        LocalDateTime end = LocalDateTime.now();
-//        System.out.println("Total Time: " + ChronoUnit.MILLIS.between(start,end) + " ms");
-//        System.out.println(turnTimes);
-//        System.out.println(matchEngine);
-//        matchEngine.printFinalScoreboard();
+        System.out.println("Game Over in " + turn + " turns!");
+        LocalDateTime end = LocalDateTime.now();
+        System.out.println("Total Time: " + ChronoUnit.MILLIS.between(start, end) + " ms");
+        System.out.println(turnTimes);
+        System.out.println(matchEngine);
+        matchEngine.printFinalScoreboard();
     }
 
-    private static BitBoard floodBoard = new BitBoard(BOARD_WIDTH+2,BOARD_HEIGHT+2);
+    private static final BitBoard floodBoard = new BitBoard(BOARD_WIDTH + 2, BOARD_HEIGHT + 2);
     public static BitBoard floodFill(BitBoard claimed) {
         int floodBoardWidth = claimed.getWidth() + 2;
         int floodBoardHeight = claimed.getHeight() + 2;

@@ -13,9 +13,9 @@ public class MatchEngine {
     private final int width;
     private final int height;
 
-    private boolean headless = true;
-    
-    private BotEntity[] bots;
+    private final boolean headless = true;
+
+    private final BotEntity[] bots;
     public MatchEngine(int width, int height,  int numberOfBots) {
         this.width = width;
         this.height = height;
@@ -30,10 +30,14 @@ public class MatchEngine {
             if (i==3){
                 botController = new RandomBot();
             }
-            bots[i] = new BotEntity(width, height, x[i], y[i], botController);
+            bots[i] = new BotEntity(width, height, x[i], y[i], botController, (byte) i);
         }
     }
 
+    // TODO remove this method
+    public BotEntity[] getBots() {
+        return bots;
+    }
 
     public void executeTick() {
         BitBoard masterClaimed = new BitBoard(width, height);
