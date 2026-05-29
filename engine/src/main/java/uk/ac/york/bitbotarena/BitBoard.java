@@ -262,6 +262,24 @@ public class BitBoard {
         return total;
     }
 
+    public int getX() {
+        if (this.getWeight() != 1) return -1;
+
+
+        return Long.numberOfTrailingZeros(this.board[this.getY()]);
+    }
+
+    public int getY() {
+        if (this.getWeight() != 1) return -1;
+
+        for (int i = 0; i < height; i++) {
+            if (this.board[i] != 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     @Override
     public String toString() {
         StringBuilder output = new StringBuilder();

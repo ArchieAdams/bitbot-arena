@@ -497,4 +497,51 @@ class BitBoardTest {
             assertEquals(0L, board.getRow(31), "Row 31 should be fully empty after shifting back and forth");
         }
     }
+
+    @Nested
+    @DisplayName("CopyFrom Tests")
+    class CopyFromTests {
+
+        @Test
+        void copyFrom_shouldCopyAllRowsExactly() {
+            BitBoard source = new BitBoard(32, 32);
+            source.setBit(0, 0);
+            source.setBit(31, 31);
+            source.setBit(15, 7);
+
+            BitBoard target = new BitBoard(32, 32);
+            target.setBit(1, 1); // noise to prove overwrite
+
+            target.copyFrom(source);
+
+            assertEquals(source, target, "Target board should exactly match source after copyFrom");
+        }
+
+        @Test
+        void copyFrom_shouldNotAliasSource() {
+            BitBoard source = new BitBoard(32, 32);
+            source.setBit(5, 5);
+
+            BitBoard target = new BitBoard(32, 32);
+            target.copyFrom(source);
+
+            source.setBit(6, 6);
+
+            assertFalse(target.getBit(6, 6), "Target should not change when source is mutated after copyFrom");
+        }
+
+        @Test
+        void copyFrom_shouldOverwritePreviousTargetState() {
+            BitBoard source = new BitBoard(32, 32);
+            source.setBit(10, 10);
+
+            BitBoard target = new BitBoard(32, 32);
+            target.setRow(-1L, 10); // full row initially
+
+            target.copyFrom(source);
+
+            assertTrue(target.getBit(10, 10), "Copied bit should exist");
+            assertEquals(1L << 10, target.getRow(10), "Old target row state should be replaced, not merged");
+        }
+    }
 }

@@ -1,6 +1,6 @@
 package uk.ac.york.bitbotarena;
 
-import static uk.ac.york.bitbotarena.Main.floodFill;
+import static uk.ac.york.bitbotarena.BoardOperations.floodFill;
 
 public class BotState {
 

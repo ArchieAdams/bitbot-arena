@@ -1,6 +1,7 @@
 package uk.ac.york.bitbotarena.Communication;
 
 import uk.ac.york.bitbotarena.BotEntity;
+import uk.ac.york.bitbotarena.MatchState;
 import uk.ac.york.bitbotarena.Movement;
 
 import java.io.DataInputStream;
@@ -25,37 +26,35 @@ public class BinaryCommunicator implements BotCommunicator {
     public BinaryCommunicator(Process process) {
         this.os = new DataOutputStream(process.getOutputStream());
         this.is = new DataInputStream(process.getInputStream());
-    }
-
-    @Override
-    public void sendState(int tick, byte index, BotEntity[] bots) throws IOException {
-        writeGameStateHeader(tick, index, bots);
-
-        writeMapToBuffer(bots);
-
-        os.write(buffer);
-        os.flush();
         clearBuffer();
     }
 
-    private void writeGameStateHeader(int tick, byte index, BotEntity[] bots) {
-        buffer[0] = MAGIC_NUMBER;
-        buffer[1] = (byte) (GAME_STATE_FRAME[tick % 2] | index);
+    @Override
+    public void sendState(MatchState matchState, byte botIndex) throws IOException {
+        BotEntity[] bots = matchState.getBots();
+        writeGameStateHeader(matchState.getTick(), bots, botIndex);
 
+        writeMapToBuffer(bots);
+
+        send();
+    }
+
+    private void writeGameStateHeader(int tick, BotEntity[] bots, byte index) {
+        writeToBuffer(MAGIC_NUMBER);
+
+        byte header = (byte) (GAME_STATE_FRAME[tick % 2] | index);
+        byte botStatus = 0;
         for (BotEntity bot : bots) {
-            buffer[2] |= (byte) (bot.getPreviousMove() == null ? 0 : moveEncoder(bot.getPreviousMove()) << (2 * bot.getIndex()));
+            botStatus |= (byte) (bot.getPreviousMove() == null ? 0 : moveEncoder(bot.getPreviousMove()) << (2 * bot.getIndex()));
             if (bot.isDead()) {
                 continue;
             }
             byte baseShift = 2;
-            buffer[1] |= (byte) (1 << (baseShift + bot.getIndex()));
+            header |= (byte) (1 << (baseShift + bot.getIndex()));
         }
 
-        for (int i = 0; i < 3; i++) {
-            xorForParity(buffer[i]);
-        }
-
-        currentByteIndex = 3;
+        writeToBuffer(header);
+        writeToBuffer(botStatus);
     }
 
     private void writeMapToBuffer(BotEntity[] bots) {
@@ -86,13 +85,11 @@ public class BinaryCommunicator implements BotCommunicator {
                         byte adjustedValue = (byte) (baseBotValue + (hasClaimedBit ? 1 : 2));
 
                         mapBuffer |= (byte) (adjustedValue << (bigSideOfByte ? 4 : 0));
-                        mapBuffer |= (byte) (adjustedValue << (bigSideOfByte ? 4 : 0));
                         break;
                     }
                 }
                 if (!bigSideOfByte) {
                     writeToBuffer(mapBuffer);
-                    xorForParity(mapBuffer);
                     mapBuffer = 0;
                 }
             }
@@ -102,9 +99,11 @@ public class BinaryCommunicator implements BotCommunicator {
 
     private void clearBuffer() {
         Arrays.fill(buffer, (byte) 0);
+        currentByteIndex = 0;
     }
 
     private void writeToBuffer(byte data) {
+        xorForParity(data);
         buffer[currentByteIndex++] = data;
     }
 
@@ -121,21 +120,31 @@ public class BinaryCommunicator implements BotCommunicator {
         };
     }
 
-    private void writeGameStartToBuffer(byte botIndex, BotEntity[] bots, int[] startingX, int[] startingY, byte tournamentPhase, short[] botELOs, int environmentSeed) {
+    @Override
+    public void sendGameStart(MatchState matchState, byte botIndex) throws IOException {
+        BotEntity[] bots = matchState.getBots();
+        writeGameStartToBuffer(bots, botIndex);
+
+        send();
+    }
+
+    private void writeGameStartToBuffer(BotEntity[] bots, byte botIndex) {
+        // To define later
+        byte tournamentPhase = 0;
+        short[] botELOs = {0, 0, 0, 0};
+        int environmentSeed = 0;
+
         writeToBuffer(MAGIC_NUMBER);
         writeToBuffer((byte) (START_FRAME | botIndex));
         writeToBuffer((byte) bots[0].getCurrentPosition().getWidth());
         writeToBuffer((byte) bots[0].getCurrentPosition().getHeight());
-        for (int i = 0; i < bots.length; i++) {
-            writeToBuffer((byte) startingX[i]);
-            writeToBuffer((byte) startingY[i]);
+        for (BotEntity bot : bots) {
+            writeToBuffer((byte) bot.getCurrentPosition().getX());
+            writeToBuffer((byte) bot.getCurrentPosition().getY());
         }
         writeToBuffer(tournamentPhase);
         for (short botELO : botELOs) {
-            byte low = (byte) (botELO & 0xFF);
-            byte high = (byte) ((botELO >> 8) & 0xFF);
-            writeToBuffer(high);
-            writeToBuffer(low);
+            writeShort(botELO);
         }
 
         byte[] byteSeed = intToBytes(environmentSeed);
@@ -145,16 +154,26 @@ public class BinaryCommunicator implements BotCommunicator {
         writeToBuffer(byteSeed[3]);
     }
 
+    @Override
+    public void sendGameEnd(byte winningBot, short[] scores, byte botIndex) throws IOException {
+        writeGameEndToBuffer(botIndex, winningBot, scores);
+        send();
+    }
+
     private void writeGameEndToBuffer(byte botIndex, byte winningBot, short[] scores) {
         writeToBuffer(MAGIC_NUMBER);
-        writeToBuffer((byte) (END_FRAME | botIndex));
-        writeToBuffer(winningBot); // 0-3 for winner, 4 for draw
+        winningBot <<= 2; // 0-3 for winner, 4 for draw
+        writeToBuffer((byte) (END_FRAME | botIndex | winningBot));
         for (short score : scores) {
-            byte low = (byte) (score & 0xFF);
-            byte high = (byte) ((score >> 8) & 0xFF);
-            writeToBuffer(high);
-            writeToBuffer(low);
+            writeShort(score);
         }
+    }
+
+    private void writeShort(short shortValue) {
+        byte low = (byte) (shortValue & 0xFF);
+        byte high = (byte) ((shortValue >> 8) & 0xFF);
+        writeToBuffer(high);
+        writeToBuffer(low);
     }
 
     public byte[] intToBytes(int value) {
@@ -168,6 +187,25 @@ public class BinaryCommunicator implements BotCommunicator {
 
     @Override
     public Movement readMove() throws IOException {
-        return Movement.values()[is.readByte()];
+        byte moveIndex = is.readByte();
+        System.out.println(moveIndex);
+        return Movement.values()[moveIndex];
+    }
+
+    @Override
+    public void close() throws IOException {
+        is.close();
+        os.close();
+    }
+
+    private void send() throws IOException {
+        //print buffer in binary for debugging
+//        System.out.println("Sending frame:");
+//        for (byte data : buffer) {
+//            System.out.println(String.format("%8s", Integer.toBinaryString(data & 0xff)).replace(' ', '0'));
+//        }
+        os.write(buffer);
+        os.flush();
+        clearBuffer();
     }
 }

@@ -2,6 +2,7 @@ package uk.ac.york.bitbotarena.BotControllers;
 
 import uk.ac.york.bitbotarena.BitBoard;
 import uk.ac.york.bitbotarena.BotState;
+import uk.ac.york.bitbotarena.MatchState;
 import uk.ac.york.bitbotarena.Movement;
 
 import java.util.Arrays;
@@ -30,7 +31,8 @@ public class GreedyBot implements BotController {
     }
 
     @Override
-    public Movement getMove(BotState state) {
+    public Movement getMove(MatchState matchState, byte botIndex) {
+        BotState state = matchState.getBot(botIndex).getState();
         currentState = state;
         if (state.isClaiming()) {
             if (claimingCount > 0 || retreating) {
@@ -47,6 +49,14 @@ public class GreedyBot implements BotController {
             retreating = false;
             return getDirectionTo(state.getCurrentPosition(),state.getClaimedBoard().notOutput());
         }
+    }
+
+    @Override
+    public void init(MatchState matchState, byte botIndex) {
+    }
+
+    @Override
+    public void gameOver(byte winningBot, short[] scores, byte botIndex) {
     }
 
 

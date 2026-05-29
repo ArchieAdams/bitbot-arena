@@ -21,7 +21,17 @@ public class BotEntity {
         this.index = index;
     }
 
+    public BotState getState() {
+        return state;
+    }
 
+    public void initController(MatchState state) {
+        controller.init(state, index);
+    }
+
+    public void gameOver(byte winningBot, short[] scores) {
+        controller.gameOver(winningBot, scores, index);
+    }
 
     public boolean isDead() { return state.isDead(); }
     public boolean isClaiming() { return state.isClaiming(); }
@@ -31,8 +41,8 @@ public class BotEntity {
     public void updateInvalidBoard(BitBoard invalidBoard) { state.updateInvalidBoard(invalidBoard); }
     public void kill() { state.kill(); }
 
-    public void executeMove() {
-        Movement move = controller.getMove(state);
+    public void executeMove(MatchState matchState) {
+        Movement move = controller.getMove(matchState, index);
         state.move(move);
         previousMove = move;
     }

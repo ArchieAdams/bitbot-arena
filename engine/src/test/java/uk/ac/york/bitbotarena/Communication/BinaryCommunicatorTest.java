@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import uk.ac.york.bitbotarena.BotControllers.BotController;
 import uk.ac.york.bitbotarena.BotEntity;
 import uk.ac.york.bitbotarena.Movement;
 
@@ -18,28 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.ac.york.bitbotarena.BotTestHelper.initBots;
 
 @DisplayName("Binary Communicator Tests")
 class BinaryCommunicatorTest {
-
-    private BotEntity initBot(byte index, int x, int y) {
-        BotController dummyController = state -> Movement.NORTH;
-        BotEntity bot = new BotEntity(32, 32, x, y, dummyController, index);
-        bot.getClaimedBoard().clearBoard();
-        bot.getClaimingBoard().clearBoard();
-        return bot;
-    }
-
-    private BotEntity[] initBots() {
-        BotEntity[] bots = new BotEntity[4];
-        int[] x = {2, 32 - 3, 2, 32 - 3};
-        int[] y = {2, 2, 32 - 3, 32 - 3};
-
-        for (byte i = 0; i < 4; i++) {
-            bots[i] = initBot(i, x[i], y[i]);
-        }
-        return bots;
-    }
 
     @Nested
     @DisplayName("sendState Tests")

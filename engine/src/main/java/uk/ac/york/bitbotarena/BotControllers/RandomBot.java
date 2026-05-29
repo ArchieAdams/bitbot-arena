@@ -1,6 +1,7 @@
 package uk.ac.york.bitbotarena.BotControllers;
 
 import uk.ac.york.bitbotarena.BotState;
+import uk.ac.york.bitbotarena.MatchState;
 import uk.ac.york.bitbotarena.Movement;
 
 import java.util.ArrayList;
@@ -10,12 +11,13 @@ import java.util.Random;
 
 public class RandomBot implements BotController {
 
-    private Random random = new Random();
+    private final Random random = new Random();
     public RandomBot() {
     }
 
     @Override
-    public Movement getMove(BotState state){
+    public Movement getMove(MatchState matchState, byte botIndex) {
+        BotState state = matchState.getBot(botIndex).getState();
         Movement[] movements = {Movement.NORTH, Movement.EAST, Movement.SOUTH, Movement.WEST};
         List<Movement> movementList = new ArrayList<>(Arrays.asList(movements));
         Movement move = null;
@@ -35,5 +37,13 @@ public class RandomBot implements BotController {
             move = movements[random.nextInt(movements.length)];
         }
         return move;
+    }
+
+    @Override
+    public void init(MatchState matchState, byte botIndex) {
+    }
+
+    @Override
+    public void gameOver(byte winningBot, short[] scores, byte botIndex) {
     }
 }
