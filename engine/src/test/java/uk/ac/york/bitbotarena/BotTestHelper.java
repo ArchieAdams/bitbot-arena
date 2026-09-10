@@ -4,7 +4,20 @@ import uk.ac.york.bitbotarena.BotControllers.BotController;
 
 public class BotTestHelper {
     public static BotEntity initBot(byte index, int x, int y) {
-        BotController dummyController = state -> Movement.NORTH;
+        BotController dummyController = new BotController() {
+            @Override
+            public Movement getMove(MatchState matchState, byte botIndex) {
+                return Movement.NORTH;
+            }
+
+            @Override
+            public void init(MatchState matchState, byte botIndex) {
+            }
+
+            @Override
+            public void gameOver(byte winningBot, short[] scores, byte botIndex) {
+            }
+        };
         BotEntity bot = new BotEntity(32, 32, x, y, dummyController, index);
         bot.getClaimedBoard().clearBoard();
         bot.getClaimingBoard().clearBoard();

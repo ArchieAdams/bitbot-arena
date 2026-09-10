@@ -1,10 +1,9 @@
 package uk.ac.york.bitbotarena;
 
 import uk.ac.york.bitbotarena.BotControllers.BotController;
-import uk.ac.york.bitbotarena.BotControllers.DockerBotController;
-import uk.ac.york.bitbotarena.BotControllers.RandomBot;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static uk.ac.york.bitbotarena.MatchVisualiser.botStates;
 import static uk.ac.york.bitbotarena.MatchVisualiser.getVisualGrid;
@@ -16,21 +15,24 @@ public class MatchEngine {
     private final boolean headless = true;
 
     MatchState matchState;
-    public MatchEngine(int width, int height,  int numberOfBots) {
+
+    public MatchEngine(int width, int height, List<BotController> controllers) {
         this.width = width;
         this.height = height;
+
+        int numberOfBots = controllers.size();
+        if (numberOfBots > 4) {
+            throw new IllegalArgumentException("BitBotArena currently only supports a maximum of 4 players.");
+        }
+
         BotEntity[] bots = new BotEntity[numberOfBots];
 
-        int[] x = {2,width-3,2,width-3};
-        int[] y = {2,2,height-3,height-3};
-
+        // Symmetric corner spawn math for up to 4 players
+        int[] x = {2, width - 3, 2, width - 3};
+        int[] y = {2, 2, height - 3, height - 3};
 
         for (int i = 0; i < numberOfBots; i++) {
-            BotController botController = new RandomBot();
-            if (i == 0) {
-                botController = new DockerBotController("java-template");
-            }
-
+            BotController botController = controllers.get(i);
             bots[i] = new BotEntity(width, height, x[i], y[i], botController, (byte) i);
         }
 

@@ -5,25 +5,33 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.ac.york.bitbotarena.BotControllers.BotController;
 
-import java.lang.reflect.Field;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("MatchEngine Collision Tests")
-class MatchEngineCollisionTest {
+@DisplayName("MatchEngine Tests")
+class MatchEngineTest {
 
     private static BotController fixed(Movement move) {
-        return state -> move;
+        return new BotController() {
+            @Override
+            public Movement getMove(MatchState matchState, byte botIndex) {
+                return move;
+            }
+
+            @Override
+            public void init(MatchState matchState, byte botIndex) {
+            }
+
+            @Override
+            public void gameOver(byte winningBot, short[] scores, byte botIndex) {
+            }
+        };
     }
 
     private static void injectBots(MatchEngine engine, BotEntity[] bots) {
-        try {
-            Field botsField = MatchEngine.class.getDeclaredField("bots");
-            botsField.setAccessible(true);
-            botsField.set(engine, bots);
-        } catch (ReflectiveOperationException e) {
-            fail("Failed to inject bots into MatchEngine for test setup: " + e.getMessage());
-        }
+        // MatchEngine stores bots inside a MatchState; tests can set the package-private matchState directly.
+        engine.matchState = new MatchState(32, 32, bots);
     }
 
     @Nested
@@ -32,7 +40,7 @@ class MatchEngineCollisionTest {
 
         @Test
         void executeTick_shouldKillBothBotsOnHeadCollision() {
-            MatchEngine engine = new MatchEngine(32, 32, 2);
+            MatchEngine engine = new MatchEngine(32, 32, List.of());
 
             BotEntity left = new BotEntity(32, 32, 10, 10, fixed(Movement.EAST), (byte) 0);
             BotEntity right = new BotEntity(32, 32, 12, 10, fixed(Movement.WEST), (byte) 1);
@@ -47,7 +55,7 @@ class MatchEngineCollisionTest {
 
         @Test
         void executeTick_shouldSkipHeadCollisionWhenOneBotAlreadyDead() {
-            MatchEngine engine = new MatchEngine(32, 32, 2);
+            MatchEngine engine = new MatchEngine(32, 32, List.of());
 
             BotEntity left = new BotEntity(32, 32, 10, 10, fixed(Movement.EAST), (byte) 0);
             BotEntity right = new BotEntity(32, 32, 12, 10, fixed(Movement.WEST), (byte) 1);
@@ -68,7 +76,7 @@ class MatchEngineCollisionTest {
 
         @Test
         void executeTick_shouldKillOtherBotWhenHeadHitsClaimingTrail() {
-            MatchEngine engine = new MatchEngine(32, 32, 2);
+            MatchEngine engine = new MatchEngine(32, 32, List.of());
 
             // Bot A head will move onto (11,10)
             BotEntity botA = new BotEntity(32, 32, 10, 10, fixed(Movement.EAST), (byte) 0);
@@ -87,7 +95,7 @@ class MatchEngineCollisionTest {
 
         @Test
         void executeTick_shouldKillBotWhenItsTrailHitsOtherHead() {
-            MatchEngine engine = new MatchEngine(32, 32, 2);
+            MatchEngine engine = new MatchEngine(32, 32, List.of());
 
             // Bot A trail on (11,10), Bot B head moves to (11,10)
             BotEntity botA = new BotEntity(32, 32, 5, 5, fixed(Movement.NORTH), (byte) 0);
@@ -111,7 +119,7 @@ class MatchEngineCollisionTest {
 
         @Test
         void executeTick_shouldKillBotTrappedInsideCompletedClaimedArea() {
-            MatchEngine engine = new MatchEngine(32, 32, 2);
+            MatchEngine engine = new MatchEngine(32, 32, List.of());
 
             // Owner builds a claimed square around intruder
             BotEntity owner = new BotEntity(32, 32, 8, 9, fixed(Movement.NORTH), (byte) 0);

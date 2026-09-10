@@ -27,4 +27,25 @@ public class GameStateView {
     public void gameOver(byte winner, short[] scores) {
         // Feel free to use however you want
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Tick: ").append(tick).append("\n");
+        sb.append("My Index: ").append(myIndex).append("\n");
+        sb.append("Tournament Phase: ").append(tournamentPhase).append("\n");
+        sb.append("Environment Seed: ").append(environmentSeed).append("\n");
+        for (int i = 0; i < bots.length; i++) {
+            BotProxy bot = bots[i];
+            sb.append("Bot ").append(i).append(": (").append(bot.x).append(", ").append(bot.y).append(") ")
+                    .append(bot.isDead ? "DEAD" : "ALIVE").append(" ELO: ").append(bot.ELO).append("\n");
+        }
+        for (byte[] bytes : grid) {
+            for (byte aByte : bytes) {
+                sb.append(aByte).append(" ");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
 }

@@ -188,8 +188,13 @@ public class BinaryCommunicator implements BotCommunicator {
     @Override
     public Movement readMove() throws IOException {
         byte moveIndex = is.readByte();
-        System.out.println(moveIndex);
         return Movement.values()[moveIndex];
+    }
+
+    @Override
+    public void readACK() throws IOException {
+        byte b = is.readByte();
+        if (b != MAGIC_NUMBER) throw new IOException("Expected ACK 0xBB, got 0x" + Integer.toHexString(b & 0xFF));
     }
 
     @Override
@@ -199,11 +204,6 @@ public class BinaryCommunicator implements BotCommunicator {
     }
 
     private void send() throws IOException {
-        //print buffer in binary for debugging
-//        System.out.println("Sending frame:");
-//        for (byte data : buffer) {
-//            System.out.println(String.format("%8s", Integer.toBinaryString(data & 0xff)).replace(' ', '0'));
-//        }
         os.write(buffer);
         os.flush();
         clearBuffer();

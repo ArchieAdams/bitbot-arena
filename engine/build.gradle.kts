@@ -17,6 +17,9 @@ dependencies {
     mockitoAgent("org.mockito:mockito-core:5.+")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    implementation("info.picocli:picocli:4.7.5")
+    annotationProcessor("info.picocli:picocli-codegen:4.7.5")
 }
 
 tasks.withType<Test>().configureEach {
@@ -31,6 +34,13 @@ tasks.withType<Test>().configureEach {
 
         jvmArgs("-javaagent:${agentJar.absolutePath}")
     }
+}
+
+tasks.register<JavaExec>("run") {
+    group = "application"
+    description = "Run the Main class"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("uk.ac.york.bitbotarena.Main")
 }
 
 tasks.jacocoTestReport {

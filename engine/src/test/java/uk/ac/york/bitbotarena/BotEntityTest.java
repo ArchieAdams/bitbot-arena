@@ -11,7 +11,20 @@ import static org.junit.jupiter.api.Assertions.*;
 class BotEntityTest {
 
     private static BotController fixedMoveController(Movement movement) {
-        return state -> movement;
+        return new BotController() {
+            @Override
+            public Movement getMove(MatchState matchState, byte botIndex) {
+                return movement;
+            }
+
+            @Override
+            public void init(MatchState matchState, byte botIndex) {
+            }
+
+            @Override
+            public void gameOver(byte winningBot, short[] scores, byte botIndex) {
+            }
+        };
     }
 
     @Nested
@@ -48,7 +61,8 @@ class BotEntityTest {
         void executeMove_shouldApplyControllerMoveAndStorePreviousMove() {
             BotEntity bot = new BotEntity(32, 32, 10, 10, fixedMoveController(Movement.EAST), (byte) 0);
 
-            bot.executeMove();
+            MatchState ms = new MatchState(32, 32, new BotEntity[]{bot});
+            bot.executeMove(ms);
 
             assertTrue(bot.getCurrentPosition().getBit(11, 10), "Bot should move east");
             assertEquals(Movement.EAST, bot.getPreviousMove(), "Previous move should be updated");
@@ -58,7 +72,8 @@ class BotEntityTest {
         void executeMove_invalidMoveShouldKillBotAndStillStorePreviousMove() {
             BotEntity bot = new BotEntity(32, 32, 0, 0, fixedMoveController(Movement.NORTH), (byte) 0);
 
-            bot.executeMove();
+            MatchState ms = new MatchState(32, 32, new BotEntity[]{bot});
+            bot.executeMove(ms);
 
             assertTrue(bot.isDead(), "Invalid move should kill the bot");
             assertEquals(Movement.NORTH, bot.getPreviousMove(), "Previous move should still be recorded");
@@ -111,7 +126,8 @@ class BotEntityTest {
             invalid.setBit(5, 4);
 
             bot.updateInvalidBoard(invalid);
-            bot.executeMove();
+            MatchState ms = new MatchState(32, 32, new BotEntity[]{bot});
+            bot.executeMove(ms);
 
             assertTrue(bot.isDead(), "Moving into invalid board should kill bot");
             assertEquals(Movement.NORTH, bot.getPreviousMove(), "Previous move should be recorded");

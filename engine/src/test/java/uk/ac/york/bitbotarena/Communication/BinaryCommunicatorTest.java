@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.ac.york.bitbotarena.BotEntity;
+import uk.ac.york.bitbotarena.MatchState;
 import uk.ac.york.bitbotarena.Movement;
 
 import java.io.ByteArrayOutputStream;
@@ -42,7 +43,8 @@ class BinaryCommunicatorTest {
 
         @Test
         void sendState_packetLength() throws IOException {
-            communicator.sendState(0, (byte) 2, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, (byte) 2);
 
             byte[] results = capturedOutput.toByteArray();
             assertEquals(516, results.length);
@@ -50,7 +52,8 @@ class BinaryCommunicatorTest {
 
         @Test
         void sendState_magicNumber() throws IOException {
-            communicator.sendState(0, (byte) 2, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, (byte) 2);
 
             byte[] results = capturedOutput.toByteArray();
             assertEquals((byte) 0xBB, results[0]);
@@ -59,7 +62,9 @@ class BinaryCommunicatorTest {
         @ParameterizedTest(name = "Tick {0}")
         @ValueSource(bytes = {0, 1, 2, 3})
         void sendState_ticksShouldAlternate(byte tick) throws IOException {
-            communicator.sendState(tick, (byte) 0, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            for (int i = 0; i < tick; i++) ms.incrementTick();
+            communicator.sendState(ms, (byte) 0);
 
             byte[] results = capturedOutput.toByteArray();
             assertEquals((byte) (tick % 2 == 0 ? 0b01000000 : 0b10000000), (byte) (results[1] & 0b11000000));
@@ -68,7 +73,8 @@ class BinaryCommunicatorTest {
         @ParameterizedTest(name = "Bot index {0}")
         @ValueSource(bytes = {0, 1, 2, 3})
         void sendState_botIndexCheck(byte index) throws IOException {
-            communicator.sendState(0, index, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index);
 
             byte[] results = capturedOutput.toByteArray();
             assertEquals(index, results[1] & 0b11);
@@ -77,7 +83,8 @@ class BinaryCommunicatorTest {
         @ParameterizedTest(name = "Bot alive {0}")
         @ValueSource(bytes = {0, 1, 2, 3})
         void sendState_botAlive(byte index) throws IOException {
-            communicator.sendState(0, index, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index);
 
             byte[] results = capturedOutput.toByteArray();
             byte deathMask = (byte) (1 << (2 + index));
@@ -88,7 +95,8 @@ class BinaryCommunicatorTest {
         @ValueSource(bytes = {0, 1, 2, 3})
         void sendState_botDead(byte index) throws IOException {
             bots[index].kill();
-            communicator.sendState(0, index, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index);
 
             byte[] results = capturedOutput.toByteArray();
             byte deathMask = (byte) (1 << (2 + index));
@@ -105,7 +113,8 @@ class BinaryCommunicatorTest {
         void sendState_packsPreviousMovesProperly(Movement move, byte index, String expectedHex) throws IOException {
             bots[index].setPreviousMove(move);
 
-            communicator.sendState(0, index, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index);
             byte[] results = capturedOutput.toByteArray();
 
             byte expected = (byte) Integer.decode(expectedHex).intValue();
@@ -116,7 +125,8 @@ class BinaryCommunicatorTest {
         void sendState_invalidBoard() {
             bots[0].getClaimedBoard().setBit(0, 0);
             bots[0].getClaimingBoard().setBit(0, 0);
-            assertThrows(IllegalStateException.class, () -> communicator.sendState(0, (byte) 2, bots),
+            MatchState ms = new MatchState(32, 32, bots);
+            assertThrows(IllegalStateException.class, () -> communicator.sendState(ms, (byte) 2),
                     "Expected an exception to be thrown if a cell is both claimed and claiming");
         }
 
@@ -137,7 +147,8 @@ class BinaryCommunicatorTest {
         })
         void sendState_claimedBoard(int x, int y, byte index, String expectedHex) throws IOException {
             bots[index].getClaimedBoard().setBit(x, y);
-            communicator.sendState(0, index, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index);
 
             byte[] results = capturedOutput.toByteArray();
             int bufferIndex = (y * 32 + x) / 2 + 3;
@@ -162,7 +173,8 @@ class BinaryCommunicatorTest {
         })
         void sendState_claimingBoard(int x, int y, byte index, String expectedHex) throws IOException {
             bots[index].getClaimingBoard().setBit(x, y);
-            communicator.sendState(0, index, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index);
 
             byte[] results = capturedOutput.toByteArray();
             int bufferIndex = (y * 32 + x) / 2 + 3;
@@ -180,7 +192,8 @@ class BinaryCommunicatorTest {
             bots[index1].getClaimingBoard().setBit(evenX, y);
             bots[index2].getClaimedBoard().setBit(evenX + 1, y);
 
-            communicator.sendState(0, index1, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            communicator.sendState(ms, index1);
 
             byte[] results = capturedOutput.toByteArray();
             int bufferIndex = (y * 32 + evenX) / 2 + 3;
@@ -195,7 +208,9 @@ class BinaryCommunicatorTest {
             bots[0].getClaimedBoard().setBit(0, 0);
             bots[1].getClaimingBoard().setBit(5, 5);
             bots[2].setPreviousMove(Movement.EAST);
-            communicator.sendState(42, (byte) 1, bots);
+            MatchState ms = new MatchState(32, 32, bots);
+            for (int i = 0; i < 42; i++) ms.incrementTick();
+            communicator.sendState(ms, (byte) 1);
             byte[] results = capturedOutput.toByteArray();
 
             byte parityCheck = 0;

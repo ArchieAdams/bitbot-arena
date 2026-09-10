@@ -14,5 +14,7 @@ public interface BotCommunicator {
 
     Movement readMove() throws IOException;
 
+    void readACK() throws IOException;
+
     void close() throws IOException;
 }
